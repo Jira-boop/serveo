@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GitHub Actions - Cloud Machine Controller</title>
+  
+  <!-- Modern Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Prompt:wght@300;400;500;600&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Cyber Grid Background -->
+  <div class="bg-grid"></div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container"></div>
+
+  <div class="app-container">
+
+    <!-- Top Header Bar -->
+    <header class="app-header">
+      <div class="logo-area">
+        <div class="logo-icon">⚡</div>
+        <div class="logo-text">
+          <h1>Workflow Cloud Controller</h1>
+          <span>แผงควบคุมและยิงสัญญาณเปิดเครื่องผ่าน GitHub Actions</span>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <!-- VM Name header badge -->
+        <div id="header-vm-badge" class="vm-badge" title="ชื่อเครื่อง VM ปัจจุบัน">
+          <span class="vm-badge-dot"></span>
+          <span class="vm-badge-label">เครื่อง:</span>
+          <strong id="header-vm-name">Cloud-VM-01</strong>
+        </div>
+
+        <!-- Rate limit badge -->
+        <div id="rate-limit-badge" class="rate-badge" title="GitHub API Rate Limit คงเหลือ">
+          API: --/--
+        </div>
+
+        <!-- User profile badge (shown after token verified) -->
+        <div id="user-badge" class="user-badge" style="display: none;">
+          <img id="user-avatar" src="" alt="Avatar">
+          <span id="user-name">@user</span>
+          <button type="button" id="btn-logout-header" class="btn-logout-tiny" title="ออกจากระบบ / ล้าง Token">✕</button>
+        </div>
+
+        <!-- Sound toggle button -->
+        <button id="btn-toggle-sound" class="icon-btn" title="เปิด/ปิด เสียงเอฟเฟกต์">
+          🔊
+        </button>
+      </div>
+    </header>
+
+    <!-- Top Multi-Page Stepper Navigation Bar -->
+    <nav class="stepper-container">
+      <div class="stepper-track">
+        <button type="button" class="step-node active" id="step-btn-1" data-step="1">
+          <span class="step-num">1</span>
+          <div class="step-label">
+            <strong>หน้า 1: ใส่ Token</strong>
+            <span>เข้าสู่ระบบด้วย GitHub PAT</span>
+          </div>
+        </button>
+        <div class="step-line" id="step-line-1"></div>
+        <button type="button" class="step-node" id="step-btn-2" data-step="2">
+          <span class="step-num">2</span>
+          <div class="step-label">
+            <strong>หน้า 2: ตั้งค่า Windows</strong>
+            <span>สร้างที่เก็บข้อมูล & YML</span>
+          </div>
+        </button>
+        <div class="step-line" id="step-line-2"></div>
+        <button type="button" class="step-node" id="step-btn-3" data-step="3">
+          <span class="step-num">3</span>
+          <div class="step-label">
+            <strong>หน้า 3: สั่งรันเครื่อง</strong>
+            <span>แผงควบคุม & ดูเวลารัน</span>
+          </div>
+        </button>
+      </div>
+    </nav>
+
+    <!-- MAIN MULTI-PAGE CONTENT -->
+    <main class="main-content">
+
+      <!-- ========================================== -->
+      <!-- PAGE 1: หน้าแรก - หน้าใส่ Token            -->
+      <!-- ========================================== -->
+      <section id="page-1" class="page-container active">
+        <div class="card page-hero-card">
+          <div class="card-header">
+            <h2 class="card-title">
+              <span class="title-icon">🔑</span> หน้า 1: ยืนยันสิทธิ์ GitHub Token (PAT)
+            </h2>
+          </div>
+
+          <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 20px;">
+            กรุณาใส่ <strong>GitHub Personal Access Token</strong> ของคุณ เพื่อให้ระบบสามารถเข้าถึงและสร้าง Workflow Cloud Machine ได้อย่างปลอดภัย
+          </p>
+
+          <!-- GitHub Token Input -->
+          <div class="form-group">
+            <label for="token-input">
+              <span>GitHub Personal Access Token (PAT)</span>
+              <span class="label-hint">สิทธิ์ที่ต้องใช้: repo หรือ workflow</span>
+            </label>
+            <div class="input-wrapper">
+              <input 
+                type="password" 
+                id="token-input" 
+                class="form-control mono" 
+                placeholder="ghp_xxxxxxxxxxxxxxxxxxxx (วาง Token ของคุณที่นี่)" 
+                spellcheck="false"
+                autocomplete="off"
+              >
+              <button type="button" id="btn-toggle-token" class="input-btn-inside" title="แสดง/ซ่อน Token">
+                👁️
+              </button>
+            </div>
+
+            <div style="display: flex; gap: 10px; margin-top: 12px;">
+              <button type="button" id="btn-verify-token" class="btn-primary" style="flex: 2; justify-content: center; height: 46px; font-size: 0.95rem;">
+                🔍 ตรวจสอบสิทธิ์ & ไปหน้าถัดไป ➔
+              </button>
+              <button type="button" id="btn-clear-token" class="btn-secondary" style="flex: 1; justify-content: center; height: 46px;" title="ล้าง Token ออกจากเบราว์เซอร์">
+                🗑️ ล้างค่า
+              </button>
+            </div>
+
+            <div class="token-helper-link-wrap" style="margin-top: 14px;">
+              <a href="https://github.com/settings/tokens/new?scopes=repo,workflow&description=Cloud-Machine-Controller" target="_blank" rel="noopener noreferrer" class="token-helper-link">
+                🔑 ยังไม่มี Token? คลิกที่นี่เพื่อสร้าง Personal Access Token บน GitHub (สิทธิ์ repo & workflow) ↗
+              </a>
+            </div>
+
+            <!-- Token status alert -->
+            <div id="token-status" class="token-status" style="margin-top: 14px;">
+              <span>⚪ กรุณาใส่ Token ของคุณ แล้วกดตรวจสอบสิทธิ์</span>
+            </div>
+          </div>
+
+          <!-- User Logged In Card Preview -->
+          <div id="token-user-card" style="display: none; margin-top: 18px; padding: 16px; background: rgba(0, 242, 254, 0.05); border: 1px solid rgba(0, 242, 254, 0.2); border-radius: var(--radius-md);">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <div style="display: flex; align-items: center; gap: 12px;">
+                <img id="page1-user-avatar" src="" alt="Avatar" style="width: 44px; height: 44px; border-radius: 50%; border: 2px solid var(--accent-cyan);">
+                <div>
+                  <h4 id="page1-user-name" style="color: #fff; font-size: 1rem;">@user</h4>
+                  <span id="page1-user-desc" style="color: var(--accent-neon-green); font-size: 0.8rem;">🟢 เข้าสู่ระบบสำเร็จพร้อมใช้งาน</span>
+                </div>
+              </div>
+              <button type="button" class="btn-nav btn-nav-primary" onclick="switchPage(2)">
+                ไปหน้า 2 (ตั้งค่า Windows) ➔
+              </button>
+            </div>
+          </div>
+
+          <!-- Quick Help / Instructions -->
+          <div class="info-box">
+            💡 <strong>วิธีสร้าง GitHub Token ภายใน 1 นาที:</strong>
+            <br>1. เข้า GitHub ➔ Settings ➔ Developer settings ➔ Personal access tokens (classic)
+            <br>2. กด <strong>Generate new token</strong> แล้วติ๊กถูกช่อง <strong>repo</strong> และ <strong>workflow</strong>
+            <br>3. คัดลอก Token (ขึ้นต้นด้วย <code>ghp_...</code>) มาวางในช่องด้านบนได้เลย!
+          </div>
+
+          <!-- Bottom Navigation -->
+          <div class="page-nav-bar" style="justify-content: flex-end;">
+            <button type="button" id="btn-next-to-page-2" class="btn-nav btn-nav-primary" onclick="handlePage1Next()">
+              ถัดไป (หน้า 2: ตั้งค่า Windows) ➔
+            </button>
+          </div>
+        </div>
+      </section>
+
+
+      <!-- ======================================================= -->
+      <!-- PAGE 2: หน้า 2 - สร้างที่เก็บข้อมูลใหม่และการตั้งค่า Windows -->
+      <!-- (ดีไซน์ตรงตามรูปภาพที่คุณส่งมา 100%)                       -->
+      <!-- ======================================================= -->
+      <section id="page-2" class="page-container">
+        <div class="card" style="max-width: 960px; margin: 0 auto;">
+          
+          <!-- Header matching image -->
+          <div class="config-header-row">
+            <div class="config-header-text">
+              <h2>สร้างที่เก็บข้อมูลใหม่และการตั้งค่า Windows</h2>
+              <p>ตั้งค่าเวอร์ชัน Windows และระยะเวลาหมดอายุสูงสุดก่อนสร้างที่เก็บข้อมูลโดยอัตโนมัติ</p>
+            </div>
+            <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+              <button type="button" id="btn-toggle-existing-repo-mode" class="btn-mode-toggle" title="สลับโหมดระหว่างสร้าง Repo ใหม่ หรือเลือก Repo เดิม">
+                <span id="mode-toggle-text">📂 เลือก Repo เดิม</span>
+              </button>
+              <button type="button" id="btn-close-edit" class="btn-mode-toggle" onclick="switchPage(3)" title="ปิดการแก้ไขและไปยังหน้ารันเครื่อง">
+                ✕ ปิดการแก้ไข
+              </button>
+            </div>
+          </div>
+
+          <!-- VIEW A: CREATE NEW REPO & WORKFLOW (EXACT MATCH TO SCREENSHOT) -->
+          <div id="create-new-repo-view">
+            
+            <!-- Radio Selection: Private vs Public -->
+            <div class="repo-type-header">เลือกโหมดการแสดงผลและโควต้าผู้วิ่ง:</div>
+            <div class="repo-type-cards">
+              <!-- Private Repo Card -->
+              <div class="repo-type-card selected-private" id="card-repo-private" onclick="selectRepoType(true)">
+                <div class="card-top-row">
+                  <div class="card-type-title">
+                    <span>🔒</span>
+                    <span>ที่เก็บข้อมูลส่วนตัว</span>
+                  </div>
+                  <span class="repo-badge-secure">ระงับอย่างปลอดภัย</span>
+                </div>
+                <ul class="repo-card-bullets">
+                  <li>จำกัดปริมาณการใช้งาน: 2,000 นาที/เดือน</li>
+                  <li>ระบบรักษาความปลอดภัย: เสถียรและไม่มีการระงับการใช้งาน</li>
+                </ul>
+              </div>
+
+              <!-- Public Repo Card -->
+              <div class="repo-type-card" id="card-repo-public" onclick="selectRepoType(false)">
+                <div class="card-top-row">
+                  <div class="card-type-title">
+                    <span>🌐</span>
+                    <span>คลังข้อมูลสาธารณะ</span>
+                  </div>
+                  <span class="repo-badge-warning">มีแนวโน้มที่จะเกิดการแขวนลอย</span>
+                </div>
+                <ul class="repo-card-bullets">
+                  <li>ขีดจำกัดเวลาใช้งาน: ไม่จำกัด (สูงสุด 6 ชั่วโมงต่อครั้ง)</li>
+                  <li>ความเสี่ยง: จะถูกระงับหากถูกตรวจพบโดยสาธารณะ</li>
+                </ul>
+              </div>
+            </div>
+
+            <!-- Environment and Timeout Settings Section -->
+            <div class="env-section-title">
+              <span>⚙️</span>
+              <span>การตั้งค่าสภาพแวดล้อม YML และตัวจับเวลาการลบฐานข้อมูล</span>
+            </div>
+
+            <!-- 3 Column Form Grid -->
+            <div class="form-grid-3">
+              <!-- Column 1: Windows OS Version -->
+              <div class="form-group" style="margin-bottom: 0;">
+                <label for="select-os-version">
+                  <span>เวอร์ชัน Windows เริ่มต้น</span>
+                </label>
+                <select id="select-os-version" class="form-control">
+                  <option value="windows-2025" selected>ระบบปฏิบัติการ Windows Server 2025 (แนะนำ)</option>
+                  <option value="windows-2022">ระบบปฏิบัติการ Windows Server 2022</option>
+                  <option value="windows-2019">ระบบปฏิบัติการ Windows Server 2019</option>
+                  <option value="windows-latest">ระบบปฏิบัติการ Windows Server (Latest)</option>
+                </select>
+              </div>
+
+              <!-- Column 2: Run Timeout -->
+              <div class="form-group" style="margin-bottom: 0;">
+                <label for="select-run-timeout">
+                  <span>ขีดจำกัดเวลารันและจับเวลา DB (สูงสุด 360 เมตร)</span>
+                </label>
+                <select id="select-run-timeout" class="form-control">
+                  <option value="360" selected>360 นาที (สูงสุด 6 ชั่วโมง)</option>
+                  <option value="300">300 นาที (5 ชั่วโมง)</option>
+                  <option value="180">180 นาที (3 ชั่วโมง)</option>
+                  <option value="120">120 นาที (2 ชั่วโมง)</option>
+                  <option value="60">60 นาที (1 ชั่วโมง)</option>
+                  <option value="10">10 นาที (ทดสอบระบบเร็ว)</option>
+                </select>
+              </div>
+
+              <!-- Column 3: Default Username (VM Name) -->
+              <div class="form-group" style="margin-bottom: 0;">
+                <label for="input-default-username">
+                  <span>การเข้าถึงชื่อผู้ใช้เริ่มต้น (User)</span>
+                </label>
+                <input 
+                  type="text" 
+                  id="input-default-username" 
+                  class="form-control input-purple-glow" 
+                  value="jira_zx" 
+                  placeholder="เช่น jira_zx, user"
+                  spellcheck="false"
+                  autocomplete="off"
+                >
+              </div>
+            </div>
+
+            <!-- 3 Column Form Grid: Password, Repo Name & Workflow Name -->
+            <div class="form-grid-3" style="margin-top: 16px;">
+              <!-- Col 1: VM Password -->
+              <div class="form-group" style="margin-bottom: 0;">
+                <label for="input-default-password">
+                  <span>รหัสผ่านเข้าเครื่อง RDP</span>
+                </label>
+                <div class="input-wrapper">
+                  <input 
+                    type="password" 
+                    id="input-default-password" 
+                    class="form-control mono" 
+                    value="123789" 
+                    placeholder="123789"
+                    spellcheck="false"
+                    autocomplete="off"
+                  >
+                  <button type="button" id="btn-toggle-password" class="input-btn-inside" title="แสดง/ซ่อน รหัสผ่าน">
+                    👁️
+                  </button>
+                </div>
+              </div>
+
+              <!-- Col 2: Repo Name with Random Button -->
+              <div class="form-group" style="margin-bottom: 0;">
+                <label for="input-new-repo-name">
+                  <span>ชื่อคลังเก็บข้อมูลใหม่ (ต้องไม่ใช่ชื่อซ้ำ)</span>
+                </label>
+                <div class="input-wrapper">
+                  <input 
+                    type="text" 
+                    id="input-new-repo-name" 
+                    class="form-control" 
+                    value="svelte-sandbox-898" 
+                    placeholder="เช่น svelte-sandbox-898"
+                    spellcheck="false"
+                    autocomplete="off"
+                  >
+                  <button type="button" id="btn-random-repo-name" class="input-btn-inside" title="สุ่มชื่อคลังข้อมูล">
+                    🔀 สุ่ม
+                  </button>
+                </div>
+              </div>
+
+              <!-- Col 3: Workflow File Name -->
+              <div class="form-group" style="margin-bottom: 0;">
+                <label for="input-workflow-filename">
+                  <span>ชื่อไฟล์เวิร์กโฟลว์ (.yml)</span>
+                </label>
+                <input 
+                  type="text" 
+                  id="input-workflow-filename" 
+                  class="form-control mono" 
+                  value="main.yml" 
+                  placeholder="main.yml"
+                  spellcheck="false"
+                  autocomplete="off"
+                >
+              </div>
+            </div>
+
+            <!-- Discord Webhooks Configuration Card -->
+            <div class="webhook-section-card" style="margin-top: 16px; padding: 16px; background: rgba(88, 101, 242, 0.07); border: 1px solid rgba(88, 101, 242, 0.28); border-radius: var(--radius-md);">
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; color: #fff; font-size: 0.95rem;">
+                  <span style="font-size: 1.2rem;">📢</span> การตั้งค่า Discord Webhooks (ส่งข้อมูลสถานะ & รหัสผ่านเข้าเครื่อง)
+                </div>
+                <span style="background: rgba(88, 101, 242, 0.25); color: #818cf8; font-size: 0.72rem; padding: 3px 10px; border-radius: 9999px; font-weight: 600;">Discord Webhook</span>
+              </div>
+
+              <div style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 14px; line-height: 1.6; background: rgba(0,0,0,0.25); padding: 10px 14px; border-radius: var(--radius-sm); border-left: 3px solid #5865F2;">
+                <div>📡 <strong>Log Webhook:</strong> จะส่งบันทึกสถานะการเริ่มระบบ การเปิดพอร์ต RDP และข้อความแจ้งเตือนต่างๆ ไปยัง Discord ช่องที่คุณเลือก</div>
+                <div>🔑 <strong>Info Webhook:</strong> จะส่งข้อมูลเชื่อมต่อ RDP ที่พร้อมใช้งาน (Host, Port, ชื่อผู้ใช้ และรหัสผ่าน) ไปยัง Discord ช่องที่คุณเลือก</div>
+              </div>
+
+              <div class="form-grid-2">
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label for="input-log-webhook">
+                    <span>📡 Log Webhook URL (ส่งบันทึก Log การติดตั้ง)</span>
+                  </label>
+                  <input 
+                    type="text" 
+                    id="input-log-webhook" 
+                    class="form-control mono" 
+                    placeholder="https://discord.com/api/webhooks/..."
+                    spellcheck="false"
+                    autocomplete="off"
+                  >
+                </div>
+
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label for="input-info-webhook">
+                    <span>🔑 Info Webhook URL (ส่ง Host, User, รหัสผ่าน)</span>
+                  </label>
+                  <input 
+                    type="text" 
+                    id="input-info-webhook" 
+                    class="form-control mono" 
+                    placeholder="https://discord.com/api/webhooks/..."
+                    spellcheck="false"
+                    autocomplete="off"
+                  >
+                </div>
+              </div>
+            </div>
+
+            <!-- Collapsible: View/Edit YML Code manually -->
+            <div style="margin-top: 14px;">
+              <div class="yaml-toggle-bar" id="btn-toggle-yaml">
+                <span>&gt;_ ดู/แก้ไขโค้ด .YML ด้วยตนเอง</span>
+                <span id="yaml-toggle-arrow">▼</span>
+              </div>
+              <div class="yaml-editor-container" id="yaml-editor-container">
+                <textarea id="yaml-code-editor" class="yaml-textarea" spellcheck="false"></textarea>
+              </div>
+            </div>
+
+            <!-- BIG VIBRANT ACTION BUTTON MATCHING SCREENSHOT -->
+            <div style="margin-top: 20px;">
+              <button type="button" id="btn-create-repo-and-upload" class="btn-create-repo">
+                <span id="create-btn-icon">🚀</span>
+                <span id="create-btn-text">สร้าง Repo ชื่อ " <span id="create-btn-repo-label">svelte-sandbox-898</span> " และอัปโหลดไฟล์ YML</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- VIEW B: SELECT EXISTING REPOSITORY (OPTIONAL ALTERNATIVE) -->
+          <div id="select-existing-repo-view" style="display: none; padding: 14px; background: rgba(0, 242, 254, 0.03); border: 1px dashed rgba(0, 242, 254, 0.25); border-radius: var(--radius-md); margin-bottom: 20px;">
+            <h3 style="font-size: 0.95rem; font-weight: 600; color: #fff; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+              <span>📂</span> เลือกคลังข้อมูลที่มีอยู่แล้วในบัญชี GitHub ของคุณ
+            </h3>
+
+            <div class="form-group">
+              <label for="repo-select">
+                <span>Repository (คลังเก็บโค้ด)</span>
+              </label>
+              <select id="repo-select" class="form-control">
+                <option value="">-- กรุณาใส่ Token ในหน้า 1 เพื่อดึง Repositories --</option>
+              </select>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="workflow-select">
+                  <span>เลือก Workflow</span>
+                </label>
+                <select id="workflow-select" class="form-control">
+                  <option value="">-- เลือก Repo ก่อน --</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="branch-select">
+                  <span>Branch</span>
+                </label>
+                <select id="branch-select" class="form-control">
+                  <option value="main">main</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Dynamic Workflow Parameters Container -->
+            <div id="workflow-dynamic-container" class="form-group" style="display: none;">
+              <label>
+                <span>⚡ พารามิเตอร์ Workflow (Inputs)</span>
+              </label>
+              <div id="workflow-dynamic-inputs" class="dynamic-inputs-box"></div>
+            </div>
+
+            <button type="button" class="btn-nav btn-nav-primary" onclick="useExistingRepoAndGo()">
+              🎮 ไปยังหน้ารันเครื่องด้วย Repo นี้ ➔
+            </button>
+          </div>
+
+          <!-- Page 2 Bottom Navigation -->
+          <div class="page-nav-bar">
+            <button type="button" class="btn-nav btn-nav-prev" onclick="switchPage(1)">
+              ⬅ ย้อนกลับไปหน้าใส่ Token (หน้า 1)
+            </button>
+            <button type="button" class="btn-nav btn-nav-primary" onclick="switchPage(3)">
+              ข้ามไปหน้ารันเครื่อง (หน้า 3) ➔
+            </button>
+          </div>
+
+        </div>
+      </section>
+
+
+      <!-- ========================================== -->
+      <!-- PAGE 3: หน้าสุดท้าย - หน้ารันเครื่อง         -->
+      <!-- ========================================== -->
+      <section id="page-3" class="page-container">
+        <div class="card" style="max-width: 960px; margin: 0 auto;">
+          <div class="card-header">
+            <h2 class="card-title">
+              <span class="title-icon">🎮</span> หน้า 3: แผงสั่งการเครื่อง (Machine Control)
+            </h2>
+            <div class="refresh-bar" style="margin-bottom: 0; padding: 4px 10px;">
+              <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; margin: 0;">
+                <span>อัปเดตออโต้</span>
+                <div class="toggle-switch">
+                  <input type="checkbox" id="toggle-auto-refresh" checked>
+                  <span class="toggle-slider"></span>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <!-- Active Target Info Pill -->
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+            <div style="font-size: 0.82rem; color: var(--text-muted);">
+              คลังข้อมูลเป้าหมาย: <strong id="active-repo-display" style="color: var(--accent-cyan); font-family: var(--font-mono);">--</strong> | Workflow: <span id="active-wf-display" style="color: #fff; font-family: var(--font-mono);">--</span>
+            </div>
+            <button type="button" class="btn-secondary" onclick="switchPage(2)" style="font-size: 0.78rem;">
+              ⚙️ ปรับแต่งการตั้งค่าเครื่อง (ย้อนกลับหน้า 2)
+            </button>
+          </div>
+
+          <!-- BIG POWER ON / TRIGGER CONSOLE -->
+          <div class="power-console">
+            <!-- Target VM pill -->
+            <div class="vm-target-bar">
+              <span>🎯 เครื่องเป้าหมาย:</span>
+              <strong id="power-target-vm">jira_zx</strong>
+            </div>
+
+            <button id="btn-power-trigger" class="btn-power">
+              <span id="btn-power-icon" class="icon-bolt">⚡</span>
+              <span id="btn-power-text">สั่งเปิดเครื่อง [ <span id="btn-vm-name">jira_zx</span> ] (START)</span>
+            </button>
+
+            <!-- Current Machine Live Status Display -->
+            <div id="machine-status-box" class="machine-status-box">
+              <div class="status-left">
+                <div id="status-dot" class="status-pulse-dot"></div>
+                <div class="status-info">
+                  <h4 id="status-title">⚪ เครื่องพร้อมใช้งาน (STANDBY)</h4>
+                  <p id="status-desc">รอส่งคำสั่งบูตเครื่อง...</p>
+                </div>
+              </div>
+              <div class="status-actions">
+                <button id="btn-cancel-run" class="btn-cancel-run" title="สั่งหยุดการทำงาน">
+                  🛑 ปิดเครื่อง
+                </button>
+                <a id="btn-view-run" href="#" target="_blank" rel="noopener noreferrer" class="btn-link-run" style="display: none;">
+                  ดู Log ↗
+                </a>
+              </div>
+            </div>
+
+            <!-- Real-Time Countdown & Auto-Restart Dashboard -->
+            <div class="timer-dashboard">
+              <div class="timer-header-row">
+                <div class="timer-label">
+                  <span>⏱️ เวลาที่เหลือ (Time Remaining)</span>
+                </div>
+                <div class="timer-config-group">
+                  <span style="font-size: 0.75rem; color: var(--text-dim);">จำกัดเวลา:</span>
+                  <select id="timer-limit-select" class="timer-limit-select" title="เลือกระยะเวลาสูงสุดของ Workflow">
+                    <option value="360" selected>6 ชม. (GitHub Max)</option>
+                    <option value="300">5 ชม. (300 นาที)</option>
+                    <option value="180">3 ชม. (180 นาที)</option>
+                    <option value="120">2 ชม. (120 นาที)</option>
+                    <option value="60">1 ชม. (60 นาที)</option>
+                    <option value="10">10 นาที (ทดสอบ)</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Digital Clock Display -->
+              <div class="timer-digits-container">
+                <div id="countdown-display" class="countdown-main">--:--:--</div>
+                <div class="elapsed-display">
+                  <span>ทำงานมาแล้ว:</span>
+                  <span id="elapsed-display" class="elapsed-val">--:--:--</span>
+                </div>
+              </div>
+
+              <!-- Glowing Linear Progress Bar -->
+              <div class="timer-progress-wrap" title="สัดส่วนเวลาที่ใช้ไป">
+                <div id="timer-progress-bar" class="timer-progress-bar"></div>
+              </div>
+
+              <!-- Auto-Restart Toggle Bar -->
+              <div id="auto-restart-bar" class="auto-restart-bar">
+                <div class="auto-restart-info">
+                  <span style="font-size: 1.1rem;">🔄</span>
+                  <div>
+                    <div style="font-size: 0.85rem; font-weight: 600; color: var(--text-main);">
+                      รันใหม่อัตโนมัติ (Auto-Restart Loop)
+                    </div>
+                    <div style="font-size: 0.74rem; color: var(--text-muted);" id="auto-restart-desc">
+                      เมื่อเวลาหมด หรือเครื่องหยุดทำงาน จะยิงคำสั่งเปิดเครื่องใหม่ทันที
+                    </div>
+                  </div>
+                </div>
+                <label class="toggle-switch green" style="margin: 0; cursor: pointer;" title="เปิด/ปิด การรันวนซ้ำอัตโนมัติ">
+                  <input type="checkbox" id="toggle-auto-restart">
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Recent Runs & Monitoring -->
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; margin-top: 24px;">
+            <h3 style="font-size: 0.95rem; font-weight: 600; color: var(--text-muted); display: flex; align-items: center; gap: 6px;">
+              <span>⏱️ ประวัติการทำงานล่าสุด (Recent Runs)</span>
+            </h3>
+            <button id="btn-refresh-runs" class="btn-secondary" title="รีเฟรชประวัติการรัน">
+              🔄 รีเฟรช
+            </button>
+          </div>
+
+          <!-- Live Runs List -->
+          <div id="runs-list" class="runs-list">
+            <div class="empty-state">
+              <div class="empty-state-icon">📡</div>
+              <div>กรุณาเลือก Repository เพื่อแสดงประวัติการรัน</div>
+            </div>
+          </div>
+
+          <!-- Page 3 Bottom Navigation -->
+          <div class="page-nav-bar">
+            <button type="button" class="btn-nav btn-nav-prev" onclick="switchPage(2)">
+              ⬅ ย้อนกลับไปหน้า 2 (ตั้งค่าเครื่อง)
+            </button>
+            <button type="button" class="btn-nav btn-nav-prev" onclick="switchPage(1)">
+              🔑 เปลี่ยน Token (หน้า 1)
+            </button>
+          </div>
+
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
